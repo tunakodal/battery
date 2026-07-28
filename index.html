@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ladder Timer</title>
+<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/aileron">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230b0e13'/><rect x='20' y='16' width='60' height='16' fill='%23e8e4d9'/><rect x='20' y='42' width='38' height='16' fill='%23e8e4d9'/><rect x='20' y='68' width='20' height='16' fill='%234fb8a0'/></svg>">
+<style>
+  :root{
+    --bg:#0b0e13;
+    --panel:#141922;
+    --line:#232a36;
+    --line-2:#3a4457;
+    --dim:#6f7c91;
+    --text:#c9d1de;
+    --fill:#e8e4d9;
+    --break:#4fb8a0;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Aileron',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:32px 24px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .stage{width:100%;max-width:900px}
+
+  .head{
+    display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    padding-bottom:14px;border-bottom:1px solid var(--line);
+  }
+  .mark{font-size:13px;font-weight:700;letter-spacing:.26em;text-transform:uppercase}
+  .mark span{color:var(--dim);font-weight:400}
+  .total{
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim);font-variant-numeric:tabular-nums;
+  }
+
+  .clock{padding:54px 0 42px;text-align:center}
+  .phase{
+    font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--dim);margin-bottom:18px;
+  }
+  .phase.is-break{color:var(--break)}
+  .remaining{
+    font-size:clamp(74px,17vw,152px);line-height:.86;font-weight:700;
+    letter-spacing:-.035em;color:var(--fill);font-variant-numeric:tabular-nums;
+  }
+  .remaining.is-break{color:var(--break)}
+  .caption{margin-top:20px;font-size:13px;letter-spacing:.05em;color:var(--dim)}
+
+  .ladder{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+
+  .col{
+    display:flex;flex-direction:column;gap:9px;
+    background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;
+  }
+  .col:focus-visible{outline:2px solid var(--fill);outline-offset:3px}
+
+  .tube{
+    position:relative;height:104px;
+    background:var(--panel);border:1px solid var(--line);
+    overflow:hidden;transition:border-color .18s ease;
+  }
+  .col:hover .tube{border-color:var(--line-2)}
+  .bar{
+    position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:var(--fill);transition:height .3s linear;
+  }
+  .col[data-kind="break"] .bar{background:var(--break)}
+  .col.is-active .tube{border-color:var(--fill)}
+  .col[data-kind="break"].is-active .tube{border-color:var(--break)}
+
+  .len{
+    font-size:20px;font-weight:700;letter-spacing:-.01em;
+    color:var(--dim);transition:color .2s ease;
+  }
+  .col.is-active .len,.col.is-past .len{color:var(--text)}
+  .col.is-active .len{color:var(--fill)}
+  .col[data-kind="break"].is-active .len{color:var(--break)}
+  .tag{
+    font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim);margin-top:2px;
+  }
+
+  @media (prefers-reduced-motion:reduce){.bar{transition:none}}
+
+  .controls{margin-top:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  button.act{
+    font:inherit;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    background:transparent;color:var(--text);border:1px solid var(--line);
+    padding:13px 22px;cursor:pointer;
+    transition:border-color .18s ease,color .18s ease,background .18s ease;
+  }
+  button.act:hover{border-color:var(--fill);color:var(--fill)}
+  button.act:focus-visible{outline:2px solid var(--fill);outline-offset:2px}
+  button.act.primary{background:var(--fill);border-color:var(--fill);color:var(--bg)}
+  button.act.primary:hover{background:#fff;border-color:#fff;color:var(--bg)}
+  .spacer{flex:1}
+  .hint{margin-top:16px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+
+  @media (max-width:640px){
+    .ladder{gap:5px}
+    .tube{height:80px}
+    .len{font-size:15px}
+    .tag{display:none}
+    .clock{padding:40px 0 32px}
+    .controls{margin-top:26px}
+  }
+</style>
+</head>
+<body>
+<main class="stage">
+
+  <header class="head">
+    <div class="mark">Ladder <span>/ 55 + 5</span></div>
+    <div class="total" id="total">Elapsed 00:00 of 60:00</div>
+  </header>
+
+  <section class="clock">
+    <div class="phase" id="phase">Ready</div>
+    <div class="remaining" id="remaining">02:00</div>
+    <div class="caption" id="caption">Press start to begin the first block.</div>
+  </section>
+
+  <div class="ladder" id="ladder"></div>
+
+  <div class="controls">
+    <button class="act primary" id="toggle">Start</button>
+    <button class="act" id="skip">Skip block</button>
+    <button class="act" id="reset">Reset</button>
+    <div class="spacer"></div>
+    <button class="act" id="sound">Sound on</button>
+  </div>
+
+  <p class="hint">Space to start or pause. Click a column to jump to that block.</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var BLOCKS = [
+    { minutes: 2,  kind: "work"  },
+    { minutes: 4,  kind: "work"  },
+    { minutes: 6,  kind: "work"  },
+    { minutes: 8,  kind: "work"  },
+    { minutes: 15, kind: "work"  },
+    { minutes: 20, kind: "work"  },
+    { minutes: 5,  kind: "break" }
+  ];
+
+  var MS = 60000;
+  var BOUNDS = [];
+  var TOTAL = 0;
+  BLOCKS.forEach(function (b) { TOTAL += b.minutes * MS; BOUNDS.push(TOTAL); });
+
+  var running = false;
+  var accumulated = 0;
+  var startedAt = 0;
+  var lastBlock = 0;
+  var soundOn = true;
+  var finished = false;
+
+  var el = {
+    ladder:    document.getElementById("ladder"),
+    phase:     document.getElementById("phase"),
+    remaining: document.getElementById("remaining"),
+    caption:   document.getElementById("caption"),
+    total:     document.getElementById("total"),
+    toggle:    document.getElementById("toggle"),
+    skip:      document.getElementById("skip"),
+    reset:     document.getElementById("reset"),
+    sound:     document.getElementById("sound")
+  };
+
+  var cols = [];
+
+  BLOCKS.forEach(function (b, i) {
+    var col = document.createElement("button");
+    col.className = "col";
+    col.dataset.kind = b.kind;
+    col.setAttribute("aria-label", "Jump to " + (b.kind === "break" ? "the break" : "block " + (i + 1)) + ", " + b.minutes + " minutes");
+    col.innerHTML =
+      '<div class="tube"><div class="bar"></div></div>' +
+      '<div><div class="len">' + b.minutes + "&#8242;</div>" +
+      '<div class="tag">' + (b.kind === "break" ? "Break" : "Block " + (i + 1)) + '</div></div>';
+    col.addEventListener("click", function () { jumpTo(i); });
+    el.ladder.appendChild(col);
+    cols.push({ root: col, bar: col.querySelector(".bar") });
+  });
+
+  function elapsed() {
+    var e = accumulated + (running ? Date.now() - startedAt : 0);
+    return e > TOTAL ? TOTAL : e;
+  }
+
+  function blockAt(ms) {
+    for (var i = 0; i < BOUNDS.length; i++) if (ms < BOUNDS[i]) return i;
+    return BLOCKS.length - 1;
+  }
+
+  function pad(n) { return n < 10 ? "0" + n : String(n); }
+
+  function clockUp(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    return pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+  }
+
+  function clockDown(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    return pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+  }
+
+  function beep(kind) {
+    if (!soundOn) return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var freqs = kind === "end" ? [660, 880, 1174] : [880];
+      freqs.forEach(function (f, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        var t = ctx.currentTime + i * 0.22;
+        osc.type = "sine";
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.26);
+      });
+      setTimeout(function () { ctx.close(); }, 1500);
+    } catch (err) { /* audio unavailable */ }
+  }
+
+  function nextLabel(idx) {
+    if (idx >= BLOCKS.length - 1) return "This is the last stretch.";
+    var n = BLOCKS[idx + 1];
+    return n.kind === "break" ? "Next: the 5 minute break." : "Next: " + n.minutes + " minutes.";
+  }
+
+  function render() {
+    var ms = elapsed();
+    var done = ms >= TOTAL;
+    var idx = blockAt(ms);
+    var block = BLOCKS[idx];
+    var startOfBlock = idx === 0 ? 0 : BOUNDS[idx - 1];
+    var span = block.minutes * MS;
+    var into = ms - startOfBlock;
+    var left = span - into;
+
+    cols.forEach(function (c, i) {
+      var ratio = (done || i < idx) ? 1 : (i === idx ? into / span : 0);
+      c.bar.style.height = (ratio * 100).toFixed(2) + "%";
+      c.root.classList.toggle("is-active", i === idx && !done);
+      c.root.classList.toggle("is-past", ratio >= 1);
+    });
+
+    var isBreak = block.kind === "break";
+    el.remaining.classList.toggle("is-break", isBreak && !done);
+    el.phase.classList.toggle("is-break", isBreak && !done);
+
+    if (done) {
+      el.remaining.textContent = "00:00";
+      el.phase.textContent = "Session complete";
+      el.caption.textContent = "Sixty minutes done. Reset to run it again.";
+      document.title = "Done - Ladder Timer";
+    } else {
+      el.remaining.textContent = clockUp(left);
+      el.phase.textContent = isBreak
+        ? "Break - 5 minutes"
+        : "Block " + (idx + 1) + " of 6 - " + block.minutes + " minutes";
+      el.caption.textContent = running
+        ? nextLabel(idx)
+        : (ms === 0 ? "Press start to begin the first block." : "Paused.");
+      document.title = clockUp(left) + " - " + (isBreak ? "Break" : "Block " + (idx + 1));
+    }
+
+    el.total.textContent = "Elapsed " + clockDown(ms) + " of 60:00";
+
+    if (idx !== lastBlock) { beep("block"); lastBlock = idx; }
+
+    if (done && !finished) {
+      finished = true;
+      running = false;
+      accumulated = TOTAL;
+      el.toggle.textContent = "Start";
+      el.toggle.classList.add("primary");
+      beep("end");
+    }
+  }
+
+  function start() {
+    if (finished) return;
+    running = true;
+    startedAt = Date.now();
+    el.toggle.textContent = "Pause";
+    el.toggle.classList.remove("primary");
+    render();
+  }
+
+  function pause() {
+    if (!running) return;
+    accumulated += Date.now() - startedAt;
+    running = false;
+    el.toggle.textContent = "Resume";
+    el.toggle.classList.add("primary");
+    render();
+  }
+
+  function toggle() { running ? pause() : start(); }
+
+  function jumpTo(i) {
+    accumulated = i === 0 ? 0 : BOUNDS[i - 1];
+    startedAt = Date.now();
+    finished = false;
+    lastBlock = i;
+    if (!running) {
+      el.toggle.textContent = accumulated === 0 ? "Start" : "Resume";
+      el.toggle.classList.add("primary");
+    }
+    render();
+  }
+
+  function reset() {
+    running = false;
+    accumulated = 0;
+    startedAt = 0;
+    lastBlock = 0;
+    finished = false;
+    el.toggle.textContent = "Start";
+    el.toggle.classList.add("primary");
+    render();
+  }
+
+  el.toggle.addEventListener("click", toggle);
+  el.reset.addEventListener("click", reset);
+
+  el.skip.addEventListener("click", function () {
+    var idx = blockAt(elapsed());
+    if (idx < BLOCKS.length - 1) {
+      jumpTo(idx + 1);
+    } else {
+      accumulated = TOTAL;
+      startedAt = Date.now();
+      render();
+    }
+  });
+
+  el.sound.addEventListener("click", function () {
+    soundOn = !soundOn;
+    el.sound.textContent = soundOn ? "Sound on" : "Sound off";
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && e.target.tagName !== "BUTTON") {
+      e.preventDefault();
+      toggle();
+    }
+  });
+
+  setInterval(render, 250);
+  render();
+})();
+</script>
+</body>
+</html>
