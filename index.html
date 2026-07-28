@@ -136,8 +136,6 @@
     <button class="act primary" id="toggle">Start</button>
     <button class="act" id="skip">Skip block</button>
     <button class="act" id="reset">Reset</button>
-    <div class="spacer"></div>
-    <button class="act" id="sound">Sound on</button>
   </div>
 
   <p class="hint">Space to start or pause. Click a column to jump to that block.</p>
@@ -166,7 +164,6 @@
   var accumulated = 0;
   var startedAt = 0;
   var lastBlock = 0;
-  var soundOn = true;
   var finished = false;
 
   var el = {
@@ -177,8 +174,7 @@
     total:     document.getElementById("total"),
     toggle:    document.getElementById("toggle"),
     skip:      document.getElementById("skip"),
-    reset:     document.getElementById("reset"),
-    sound:     document.getElementById("sound")
+    reset:     document.getElementById("reset")
   };
 
   var cols = [];
@@ -217,30 +213,6 @@
   function clockDown(ms) {
     var s = Math.max(0, Math.floor(ms / 1000));
     return pad(Math.floor(s / 60)) + ":" + pad(s % 60);
-  }
-
-  function beep(kind) {
-    if (!soundOn) return;
-    try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      var ctx = new Ctx();
-      var freqs = kind === "end" ? [660, 880, 1174] : [880];
-      freqs.forEach(function (f, i) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        var t = ctx.currentTime + i * 0.22;
-        osc.type = "sine";
-        osc.frequency.value = f;
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.26);
-      });
-      setTimeout(function () { ctx.close(); }, 1500);
-    } catch (err) { /* audio unavailable */ }
   }
 
   function nextLabel(idx) {
@@ -288,7 +260,7 @@
 
     el.total.textContent = "Elapsed " + clockDown(ms) + " of 60:00";
 
-    if (idx !== lastBlock) { beep("block"); lastBlock = idx; }
+    if (idx !== lastBlock) { lastBlock = idx; }
 
     if (done && !finished) {
       finished = true;
@@ -296,7 +268,6 @@
       accumulated = TOTAL;
       el.toggle.textContent = "Start";
       el.toggle.classList.add("primary");
-      beep("end");
     }
   }
 
@@ -355,11 +326,6 @@
       startedAt = Date.now();
       render();
     }
-  });
-
-  el.sound.addEventListener("click", function () {
-    soundOn = !soundOn;
-    el.sound.textContent = soundOn ? "Sound on" : "Sound off";
   });
 
   document.addEventListener("keydown", function (e) {
