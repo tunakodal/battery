@@ -1,27 +1,27 @@
 # Ladder Timer
 
-Basit, tarayıcı tabanlı bir odaklanma zamanlayıcısı. Tek bir HTML dosyasından oluşur, kuruluma gerek yoktur — dosyayı açmak yeterlidir.
+A simple, browser-based focus timer. It is a single HTML file with no setup required: just open the file.
 
-## Nasıl Çalışır
+## How It Works
 
-Toplam 60 dakikalık bir oturumu, kademeli olarak uzayan 6 çalışma bloğuna ve ardından gelen 5 dakikalık bir molaya böler:
+The timer splits a 60-minute session into 6 work blocks of increasing length, followed by a 5-minute break:
 
-**2 → 4 → 6 → 8 → 15 → 20 dakika (çalışma) → 5 dakika (mola)**
+**2 → 4 → 6 → 8 → 15 → 20 minutes (work) → 5 minutes (break)**
 
-Ekranda her blok bir sütun olarak gösterilir; süre ilerledikçe sütun aşağıdan yukarıya dolar, böylece hem içinde bulunulan bloğun hem de oturumun genel ilerleyişi tek bakışta görülebilir.
+Each block is shown as a column that fills from bottom to top as time passes, so both the current block and the overall progress of the session are visible at a glance.
 
-## Kullanım
+## Usage
 
-- **Start / Pause**: Zamanlayıcıyı başlatır veya duraklatır
-- **Skip block**: Mevcut bloğu atlayıp bir sonrakine geçer
-- **Reset**: Oturumu baştan başlatır
-- **Boşluk tuşu**: Start/Pause için kısayol
-- Herhangi bir sütuna tıklayarak doğrudan o bloğa atlanabilir
+- **Start / Pause**: Starts or pauses the timer
+- **Skip block**: Skips the current block and moves to the next one
+- **Reset**: Restarts the session from the beginning
+- **Space bar**: Shortcut for Start / Pause
+- Click any column to jump directly to that block
 
-Sekme başlığı, o an kalan süreyi gösterecek şekilde güncellenir; böylece sekme arka planda bile olsa süre takip edilebilir.
+The tab title is updated with the remaining time, so the timer can be followed even when the tab is in the background.
 
-## Teknik Notlar
+## Technical Notes
 
-- Harici bağımlılık yok, tek bir `.html` dosyası
-- GitHub Pages üzerinden statik olarak yayınlanabilir
-- Aileron yazı tipi, koyu tema
+- No external dependencies, a single `.html` file
+- Can be published statically with GitHub Pages
+- Aileron typeface, dark theme
